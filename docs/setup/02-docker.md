@@ -71,3 +71,9 @@ Should output `enabled`. If not:
 ```bash
 sudo systemctl enable docker
 ```
+
+---
+
+## Docker & UFW
+
+Docker bypasses UFW by default. This is fixed via `ufw-docker` — installation and all port rules are managed centrally in [01 — OS Hardening](01-os-hardening.md).

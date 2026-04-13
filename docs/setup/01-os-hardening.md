@@ -1,54 +1,82 @@
 # 01 — OS Hardening
 
-## Firewall (UFW)
+## Firewall (UFW + ufw-docker)
 
-### Single Pi — Panel + Wings on the same machine
+This is the single place for all firewall configuration — host rules and Docker container ports alike.
 
-```bash
-sudo ufw allow ssh
-sudo ufw allow 25565/tcp
-sudo ufw allow from <LOCAL_SUBNET> to any port 2022 proto tcp
-sudo ufw default deny incoming
-sudo ufw enable
-```
-
-> Port 8080 (Wings API) needs no rule here — Panel and Wings communicate over localhost.
+> **Why ufw-docker?** Docker bypasses UFW by writing its own iptables rules directly. A plain `ufw allow 25565` has no effect on Docker-exposed ports. `ufw-docker` fixes this by hooking into the `DOCKER-USER` chain, which Docker reserves exactly for custom rules.
 
 ---
 
-### Two Pis — Panel and Wings on separate machines
+### Step 1 — Base UFW setup
 
-**Panel Pi:**
-
-```bash
-sudo ufw allow ssh
-sudo ufw allow from <LOCAL_SUBNET> to any port 2022 proto tcp
-sudo ufw default deny incoming
-sudo ufw enable
-```
-
-**Wings Pi:**
+Run on every Pi before Docker is installed:
 
 ```bash
 sudo ufw allow ssh
-sudo ufw allow 25565/tcp
-sudo ufw allow from <PANEL_IP> to any port 8080 proto tcp
-sudo ufw allow from <LOCAL_SUBNET> to any port 2022 proto tcp
 sudo ufw default deny incoming
 sudo ufw enable
 ```
 
 ---
 
-### Why these rules?
+### Step 2 — Install ufw-docker
 
-| Rule | Port | Reachable from | Reason |
-|---|---|---|---|
-| `allow ssh` | 22/tcp | anywhere | Remote access to the Pi |
-| `allow 25565/tcp` | 25565/tcp | anywhere | Minecraft server, needs to be publicly reachable — Wings Pi only |
-| `allow from <PANEL_IP> … 8080` | 8080/tcp | Panel IP only | Wings API — only needed when Panel and Wings run on separate machines |
-| `allow from <LOCAL_SUBNET> … 2022` | 2022/tcp | LAN only | Restricted to local subnet |
-| `default deny incoming` | — | — | Blocks everything not explicitly allowed |
+Run after Docker is installed (see [02 — Docker](02-docker.md)):
 
-> Replace `<PANEL_IP>` with the IP of the Panel Pi, e.g. `192.168.1.10`.
+```bash
+sudo wget -O /usr/local/bin/ufw-docker \
+  https://github.com/chaifeng/ufw-docker/raw/master/ufw-docker
+sudo chmod +x /usr/local/bin/ufw-docker
+sudo ufw-docker install
+sudo systemctl restart ufw
+```
+
+`ufw-docker install` patches `/etc/ufw/after.rules` only — no changes to Docker itself. After this, all container ports are blocked by default.
+
+---
+
+### Step 3 — Allow container ports
+
+Run after Wings is started (see [04 — Wings](04-wings.md)).
+
+**Single Pi — Panel + Wings on the same machine:**
+
+```bash
+# SFTP — local network only
+sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 2022
+
+# Minecraft game servers — public
+sudo ufw route allow proto tcp from any to any port 25565
+```
+
+> Port 8080 (Wings API) needs no external rule — Panel reaches Wings via `host.docker.internal` on the same host.
+
+**Two Pis — Wings on a separate machine:**
+
+```bash
+# Wings API — Panel IP only
+sudo ufw route allow proto tcp from <PANEL_IP> to any port 8080
+
+# SFTP — local network only
+sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 2022
+
+# Minecraft game servers — public
+sudo ufw route allow proto tcp from any to any port 25565
+```
+
+> Replace `<PANEL_IP>` with the Panel Pi's IP, e.g. `192.168.1.10`.
 > Replace `<LOCAL_SUBNET>` with your local subnet, e.g. `192.168.2.0/24`.
+
+---
+
+### Port overview
+
+| Port | Service | Reachable from | Rule type |
+|---|---|---|---|
+| 22/tcp | SSH | anywhere | `ufw allow` (host) |
+| 8080/tcp | Wings API | Panel IP only | `ufw route` — two-Pi setup only |
+| 2022/tcp | Wings SFTP | local subnet | `ufw route` |
+| 25565/tcp | Minecraft | anywhere | `ufw route` |
+
+> Game server containers are created dynamically by Wings and cannot be allowed by container name — that's why `ufw route` (by port) is used instead of `ufw-docker allow`.
