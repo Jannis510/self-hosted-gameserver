@@ -1,5 +1,37 @@
 # 01 — OS Hardening
 
+## Kernel — cgroup Memory
+
+Docker needs cgroup memory accounting enabled so the Panel dashboard can display RAM usage per container. On Raspberry Pi OS this is not active by default.
+
+Edit `/boot/firmware/cmdline.txt`:
+
+```bash
+sudo nano /boot/firmware/cmdline.txt
+```
+
+Append to the **end of the existing line** (do not add a new line):
+
+```
+cgroup_enable=memory cgroup_memory=1 swapaccount=1
+```
+
+Example — the line should look something like this afterwards:
+
+```
+console=serial0,115200 console=tty1 root=PARTUUID=... rootfstype=ext4 fsck.repair=yes rootwait cgroup_enable=memory cgroup_memory=1 swapaccount=1
+```
+
+Then reboot:
+
+```bash
+sudo reboot
+```
+
+> Without this, memory bars in the Panel dashboard will be empty or missing.
+
+---
+
 ## Firewall (UFW + ufw-docker)
 
 This is the single place for all firewall configuration — host rules and Docker container ports alike.
