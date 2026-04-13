@@ -1,0 +1,21 @@
+services:
+  wings:
+    image: ghcr.io/pelican-dev/wings:${WINGS_VERSION}
+    restart: always
+    networks:
+      - pelican
+    ports:
+      - "8080:8080"
+      - "2022:2022"
+    tty: true
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/pelican:/var/lib/pelican
+      - /etc/pelican:/etc/pelican
+      - /tmp/pelican:/tmp/pelican
+
+networks:
+  pelican:
+    driver: bridge
