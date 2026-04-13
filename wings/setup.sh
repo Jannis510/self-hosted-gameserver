@@ -23,16 +23,12 @@ fi
 echo "==> Creating directories..."
 mkdir -p /etc/pelican /var/run/wings
 
-# Download Wings
-if [ -f /usr/local/bin/wings ]; then
-    echo "==> Wings already installed, skipping download."
-else
-    echo "==> Downloading Wings (ARM64)..."
-    curl -L -o /usr/local/bin/wings \
-        "https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_arm64"
-    chmod u+x /usr/local/bin/wings
-    echo "==> Wings downloaded."
-fi
+
+echo "==> Downloading Wings (ARM64)..."
+curl -L -o /usr/local/bin/wings \
+    "https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_arm64"
+chmod u+x /usr/local/bin/wings
+echo "==> Wings downloaded."
 
 # Install systemd service
 if [ -f /etc/systemd/system/wings.service ]; then
