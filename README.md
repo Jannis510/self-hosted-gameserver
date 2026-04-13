@@ -50,6 +50,17 @@ A self-hosted game server stack running on a **Raspberry Pi 5 (ARM64)**, managed
 
 ---
 
+## Setup
+
+Follow the guides in order:
+
+1. [OS Hardening](docs/setup/01-os-hardening.md)
+2. [Docker](docs/setup/02-docker.md)
+3. [Pelican Panel](docs/setup/03-pelican-panel.md)
+4. [Wings](docs/setup/04-wings.md)
+
+---
+
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md).
