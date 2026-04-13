@@ -1,6 +1,7 @@
 services:
   panel:
     image: ghcr.io/pelican-dev/panel:${PANEL_VERSION}
+    container_name: pelican_panel
     restart: unless-stopped
     networks:
       - default
