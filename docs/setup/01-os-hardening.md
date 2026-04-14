@@ -50,6 +50,8 @@ sudo ufw default deny incoming
 sudo ufw enable
 ```
 
+> SSH uses port 22. Wings SFTP (port 2022) is a container port and is configured later in Step 3 via `ufw route`.
+
 ---
 
 ### Step 2 — Install ufw-docker
@@ -68,6 +70,31 @@ sudo systemctl restart ufw
 
 ---
 
+#### Narrow down LAN access (recommended)
+
+By default, ufw-docker adds RETURN rules that let all private-subnet traffic (10.x, 192.168.x) bypass the block and reach all container ports. Comment these out to enforce your `ufw route` rules for LAN traffic as well:
+
+```bash
+sudo nano /etc/ufw/after.rules
+```
+
+Find and comment out these two lines:
+
+```
+# -A DOCKER-USER -j RETURN -s 10.0.0.0/8
+# -A DOCKER-USER -j RETURN -s 192.168.0.0/16
+```
+
+> Without this change, any device on your local network can reach all Docker container ports regardless of your `ufw route` rules below.
+
+Restart UFW after saving:
+
+```bash
+sudo systemctl restart ufw
+```
+
+---
+
 ### Step 3 — Allow container ports
 
 Run after Wings is started (see [04 — Wings](04-wings.md)).
@@ -75,14 +102,18 @@ Run after Wings is started (see [04 — Wings](04-wings.md)).
 **Single Pi — Panel + Wings on the same machine:**
 
 ```bash
-# SFTP — local network only
+# Panel — LAN only
+sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 80
+
+# Wings API — LAN only
+sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 8080
+
+# Wings SFTP — LAN only
 sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 2022
 
 # Minecraft game servers — public
-sudo ufw route allow proto tcp from any to any port 25565
+sudo ufw route allow proto tcp from any to any port <MINECRAFT_PORT>
 ```
-
-> Port 8080 (Wings API) needs no external rule — Panel reaches Wings via `host.docker.internal` on the same host.
 
 **Two Pis — Wings on a separate machine:**
 
@@ -90,15 +121,22 @@ sudo ufw route allow proto tcp from any to any port 25565
 # Wings API — Panel IP only
 sudo ufw route allow proto tcp from <PANEL_IP> to any port 8080
 
-# SFTP — local network only
+# Wings SFTP — LAN only
 sudo ufw route allow proto tcp from <LOCAL_SUBNET> to any port 2022
 
 # Minecraft game servers — public
-sudo ufw route allow proto tcp from any to any port 25565
+sudo ufw route allow proto tcp from any to any port <MINECRAFT_PORT>
 ```
 
-> Replace `<PANEL_IP>` with the Panel Pi's IP, e.g. `192.168.1.10`.
 > Replace `<LOCAL_SUBNET>` with your local subnet, e.g. `192.168.2.0/24`.
+> Replace `<PANEL_IP>` with the Panel Pi's IP, e.g. `192.168.1.10` (two-Pi only).
+> Replace `<MINECRAFT_PORT>` with the port(s) your game server uses, e.g. `25565`. Add one rule per port.
+
+Reload UFW after adding all rules:
+
+```bash
+sudo ufw reload
+```
 
 ---
 

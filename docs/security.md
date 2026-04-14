@@ -6,7 +6,7 @@ All ports that Docker or the host exposes, and who can reach them.
 
 | Port | Protocol | Service | Reachable from | Notes |
 |------|----------|---------|----------------|-------|
-| 22 | TCP | SSH | Anywhere | UFW rule: `allow ssh` |
+| 22 | TCP | SSH | LAN | UFW rule: `allow ssh` — not forwarded on router |
 | 80 | TCP | Pelican Panel (HTTP) | LAN | Caddy — redirects to HTTPS or serves HTTP depending on `APP_URL` |
 | 443 | TCP | Pelican Panel (HTTPS) | LAN / Internet | Only internet-reachable if you forward it on the router |
 | 8080 | TCP | Wings API | LAN (single-Pi) / Panel IP only (two-Pi) | Panel talks to Wings over this port. Must never be publicly reachable. |
@@ -58,12 +58,12 @@ This is intentional — Wings needs to spin up and manage game server containers
 ```mermaid
 graph LR
     Internet -->|":25565 TCP — Minecraft"| Wings
-    Internet -->|":22 TCP — SSH"| Host
 
     subgraph LAN ["LAN only"]
         Panel -->|":8080 TCP — Wings API"| Wings
         Panel -->|":2022 TCP — SFTP"| Wings
         Browser -->|":80 / :443 — Panel UI"| Panel
+        Browser -->|":22 TCP — SSH"| Host
     end
 
     subgraph Pi ["Raspberry Pi 5"]
