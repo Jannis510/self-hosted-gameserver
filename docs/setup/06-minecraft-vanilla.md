@@ -69,6 +69,30 @@ Then start the server again.
 
 ---
 
+## Whitelist (Friends-only)
+
+If the server is only meant for specific players, enable the whitelist. Without it, anyone who knows the IP can join.
+
+**Enable in `server.properties`:**
+
+```
+white-list=true
+```
+
+Restart the server after changing `server.properties`.
+
+**Add players via Panel console:**
+
+```
+whitelist add <username>
+whitelist remove <username>
+whitelist list
+```
+
+> Usernames are case-sensitive and tied to the Mojang account. A player cannot join until they are on the whitelist.
+
+---
+
 ## Port Forwarding
 
 To make the server reachable from outside your local network, forward port `25565` on your router to the Pi.
